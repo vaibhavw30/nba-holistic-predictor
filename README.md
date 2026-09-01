@@ -1,315 +1,285 @@
-# NBA Holistic Prediction Platform
+# Benchwarmer — NBA Prediction, Trading Engine, and Signal Research
 
-An AI-powered platform that predicts NBA game outcomes using machine learning (XGBoost) and provides real-time predictions through a modern web interface.
+Three connected components: a machine-learning model that predicts NBA game
+outcomes, a C++20 engine that trades those predictions as fair values on Kalshi
+event markets (paper-only), and a research harness that measures whether the
+signal is actually any good.
 
-> **📖 Start here: [Project Overview](docs/PROJECT-OVERVIEW.md)** — the full map of how the pieces fit: the NBA prediction model, the low-latency C++ Kalshi trading engine that trades its fair values (paper-only), and the signal-research harness that measures and sharpens the signal. This README covers the prediction platform (below); the overview ties in the trading and research layers.
+> **📖 Full map: [Project Overview](docs/PROJECT-OVERVIEW.md)** — how the three
+> pieces fit together end to end.
 
-## Project Overview
+## Components at a glance
 
-This platform combines:
-- **Machine Learning**: XGBoost models trained on historical NBA data
-- **Modern Frontend**: React + Vite + Tailwind CSS
-- **Cloud Database**: Supabase for data storage and real-time updates
-- **Comprehensive Features**: Team stats, player data, and advanced metrics
+| Component | What it is | Status |
+|---|---|---|
+| **NBA prediction platform** (`backend_ml/`, `frontend_web/`) | XGBoost + Ridge ensemble over engineered team features; predictions served to a React dashboard via Supabase | **Working, accuracy below target.** Full pipeline runs end to end; 61.55% on the held-out split vs a >65% goal |
+| **C++20 trading engine** (`trading_engine/`) | Kalshi WebSocket ingest, order-book reconstruction, strategy → risk → paper execution, deterministic replay harness | **Working, paper-only.** 33 tests passing; live socket path never run against a real account |
+| **Signal-research harness** (`backend_ml/signal_research/`) | Calibration (Brier/ECE/isotonic/Platt), closing-line-value analysis, market capture, settlement | **Working.** Part of a 193-test Python suite |
 
-## Project Structure
-
-```
-nba-holistic-predictor/
-│
-├── frontend_web/              # React frontend application
-│   ├── src/
-│   │   ├── components/        # React components
-│   │   │   ├── Navbar.jsx     # Navigation bar
-│   │   │   └── GameCard.jsx   # Game prediction card
-│   │   ├── App.jsx            # Main dashboard
-│   │   ├── main.jsx           # React entry point
-│   │   ├── index.css          # Global styles (Tailwind)
-│   │   └── supabaseClient.js  # Supabase connection
-│   ├── public/                # Static assets
-│   ├── index.html             # HTML entry point
-│   ├── package.json           # Dependencies
-│   ├── vite.config.js         # Vite configuration
-│   └── tailwind.config.js     # Tailwind configuration
-│
-├── backend_ml/                # Python ML backend
-│   ├── data_engine.py         # Data collection & feature engineering
-│   ├── train_model.py         # Model training & evaluation
-│   ├── predict.py             # Generate predictions
-│   ├── requirements.txt       # Python dependencies
-│   └── README.md              # Backend documentation
-│
-├── SUPABASE_SCHEMA.sql        # Database schema
-└── README.md                  # This file
-```
-
-## Tech Stack
-
-### Frontend
-- **React 18**: UI framework
-- **Vite**: Build tool and dev server
-- **Tailwind CSS**: Utility-first styling
-- **Lucide React**: Modern icon library
-- **Supabase JS Client**: Database integration
-
-### Backend
-- **Python 3.10+**: Core language
-- **XGBoost**: Machine learning model
-- **Pandas & NumPy**: Data processing
-- **Scikit-learn**: Model evaluation
-- **Supabase**: Cloud PostgreSQL database
-
-### Infrastructure
-- **Supabase**: Backend-as-a-Service (database, auth, storage)
-- **Vercel/Netlify**: Frontend hosting (recommended)
-- **Cloud scheduler**: Daily prediction updates
-
-## Getting Started
-
-### Prerequisites
-- Node.js 18+ and npm
-- Python 3.10+
-- Supabase account (free tier available)
-- NBA data API access (optional, see data sources)
-
-### 1. Database Setup
-
-1. Create a Supabase project at [supabase.com](https://supabase.com)
-2. Go to SQL Editor in your Supabase dashboard
-3. Copy the contents of `SUPABASE_SCHEMA.sql`
-4. Execute the SQL to create tables
-5. Note your project URL and anon key
-
-### 2. Frontend Setup
-
-```bash
-cd frontend_web
-
-# Install dependencies
-npm install
-
-# Create environment file
-cp .env.example .env
-
-# Add your Supabase credentials to .env
-# VITE_SUPABASE_URL=your_supabase_url
-# VITE_SUPABASE_ANON_KEY=your_anon_key
-
-# Start development server
-npm run dev
-```
-
-The frontend will be available at `http://localhost:3000`
-
-### 3. Backend Setup
-
-```bash
-cd backend_ml
-
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Create environment file
-cat > .env << EOF
-SUPABASE_URL=your_supabase_url
-SUPABASE_KEY=your_supabase_service_key
-NBA_API_KEY=your_api_key_if_needed
-EOF
-```
-
-## Implementation Roadmap
-
-### Phase 1: Data Collection ✅ (Scaffolding Complete)
-- [x] Set up project structure
-- [ ] Implement NBA data fetching
-- [ ] Store historical game data in Supabase
-- [ ] Collect team and player statistics
-- [ ] Engineer prediction features
-
-### Phase 2: Model Development
-- [ ] Load and prepare training data
-- [ ] Train baseline XGBoost model
-- [ ] Perform hyperparameter tuning
-- [ ] Evaluate model performance
-- [ ] Achieve >65% accuracy target
-
-### Phase 3: Prediction Pipeline
-- [ ] Load trained model for inference
-- [ ] Fetch today's games and data
-- [ ] Generate predictions
-- [ ] Store predictions in Supabase
-- [ ] Set up daily automated predictions
-
-### Phase 4: Frontend Integration
-- [ ] Connect frontend to Supabase
-- [ ] Display real predictions (replace mock data)
-- [ ] Implement working filters
-- [ ] Add prediction details modal
-- [ ] Show prediction confidence levels
-
-### Phase 5: Advanced Features
-- [ ] Real-time game updates
-- [ ] Historical prediction tracking
-- [ ] Model performance dashboard
-- [ ] Betting odds comparison
-- [ ] User accounts and favorites
-- [ ] Mobile responsive design
-
-## Usage
-
-### Training a Model
-
-```python
-# In backend_ml/
-from train_model import train_full_pipeline
-
-# Train model with historical data
-results = train_full_pipeline(
-    start_season='2018-19',
-    end_season='2023-24',
-    tune_hyperparameters=True
-)
-```
-
-### Generating Predictions
-
-```python
-# In backend_ml/
-from predict import predict_todays_games
-
-# Generate predictions for today's games
-predictions = predict_todays_games()
-```
-
-### Viewing Predictions
-
-1. Start the frontend: `npm run dev` in `frontend_web/`
-2. Open `http://localhost:3000`
-3. View today's predictions on the dashboard
-
-## Key Features (Planned)
-
-- **AI Win Probabilities**: Machine learning predictions for every game
-- **Confidence Scores**: Know which predictions are most reliable
-- **Team Analytics**: View detailed team statistics and trends
-- **Historical Performance**: Track prediction accuracy over time
-- **Real-time Updates**: Live game status and score updates
-- **Advanced Filters**: Search by team, date, or confidence level
-
-## Data Sources
-
-Recommended NBA data sources:
-
-1. **NBA Stats API** (stats.nba.com): Official NBA statistics
-2. **Ball Don't Lie API**: Free NBA data API
-3. **ESPN API**: Game schedules and scores
-4. **Basketball Reference**: Historical data
-5. **The Odds API**: Betting lines for comparison
-
-## Model Features
-
-The prediction model considers:
-
-### Team Performance
-- Offensive/defensive ratings
-- Points per game
-- Field goal percentages
-- Recent form (last 5/10 games)
-
-### Context
-- Home court advantage
-- Days of rest
-- Back-to-back games
-- Travel distance
-
-### Matchup History
-- Head-to-head record
-- Recent meetings
-- Playoff implications
-
-### Player Impact
-- Key player availability
-- Injury status
-- Roster depth
-
-## Performance Goals
-
-Target metrics:
-- **Accuracy**: >65% (baseline: 50% random)
-- **High Confidence Accuracy**: >70% for predictions with 75%+ confidence
-- **Calibration**: Well-calibrated probabilities
-- **ROC-AUC**: >0.70
-
-## Development Workflow
-
-1. **Collect Data**: Use `data_engine.py` to fetch and store NBA data
-2. **Train Model**: Use `train_model.py` to train and evaluate models
-3. **Generate Predictions**: Use `predict.py` for daily predictions
-4. **View Results**: Frontend displays predictions from Supabase
-
-## Environment Variables
-
-### Frontend (.env in frontend_web/)
-```bash
-VITE_SUPABASE_URL=your_supabase_project_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-```
-
-### Backend (.env in backend_ml/)
-```bash
-SUPABASE_URL=your_supabase_project_url
-SUPABASE_KEY=your_supabase_service_key
-NBA_API_KEY=your_nba_api_key
-```
-
-## Deployment
-
-### Frontend
-Deploy to Vercel or Netlify:
-
-```bash
-cd frontend_web
-npm run build
-# Deploy dist/ folder
-```
-
-### Backend
-Options:
-1. **Cloud Functions**: Deploy prediction pipeline to AWS Lambda or Google Cloud Functions
-2. **Scheduled Jobs**: Use GitHub Actions or cloud scheduler for daily predictions
-3. **API Service**: Deploy FastAPI wrapper for real-time predictions
-
-## Contributing
-
-This is a personal project, but suggestions and improvements are welcome!
-
-## License
-
-MIT License - feel free to use this for learning or personal projects.
-
-## Next Steps
-
-1. **Implement Data Collection**: Start with `backend_ml/data_engine.py`
-2. **Gather Historical Data**: Collect 2-3 seasons of game data
-3. **Train Initial Model**: Use `backend_ml/train_model.py`
-4. **Test Predictions**: Generate predictions with `backend_ml/predict.py`
-5. **Connect Frontend**: Replace mock data with real Supabase queries
-6. **Iterate**: Improve features, model, and UI based on performance
-
-## Support
-
-For questions or issues:
-1. Check the README files in each directory
-2. Review the detailed comments in the code
-3. Consult the Supabase documentation
-4. Check XGBoost and scikit-learn docs for ML questions
+Nothing here places real orders, and no real money is at risk. The only
+execution path is a simulated paper venue.
 
 ---
 
-**Built with:** React, Python, XGBoost, Supabase, Tailwind CSS
+## 1. NBA prediction platform
 
-**Status:** 🚧 In Development - Scaffolding Complete
+**Status: working end to end; predictive accuracy is the open problem.**
+
+An XGBoost + Ridge ensemble over 18 engineered features — Elo ratings, EWMA'd
+four-factor stats, rest/fatigue, momentum, and home-court context. Feature
+construction is causal by design: every rolling statistic is `shift(1)`-ed
+before its window so a game never sees its own outcome
+(`backend_ml/data_engine.py:66-78`), and Elo is recorded pre-game
+(`backend_ml/elo_engine.py:54-56`).
+
+What works:
+
+- **Data collection** — `data_engine.py` pulls from the NBA Stats API and caches
+  a 13,182-game training set spanning 2015–2026.
+- **Training** — `train_model.py` does a chronological 85/15 split with
+  `GridSearchCV` hyperparameter tuning and the scaler fit on train only.
+- **Recency weighting** — an exponential half-life weighting scheme
+  (`recency.py`) with a walk-forward sweep to pick the half-life
+  (`halflife_sweep.py`). The sweep currently selects *uniform* weighting: no
+  finite half-life cleared the acceptance margin, so it ships dormant.
+- **Prediction** — `predict.py` generates predictions and upserts them to
+  Supabase (`predict.py:510-533`).
+- **Automated retraining** — a launchd job runs nightly, gated on measured
+  model drift, deploying a new model only if held-out accuracy holds within
+  tolerance (`scheduled_retrain.py`, `backend_ml/scripts/*.plist`).
+- **Frontend** — React dashboard reading real predictions from Supabase
+  (`frontend_web/src/App.jsx:39`), with team search and confidence filtering.
+
+**The honest gap:** held-out accuracy is **61.55%** on the 85/15 chronological
+test split (`MODEL_PARAMETERS.md:150`), against a >65% target. The model beats
+the 50% coin flip but has not hit the bar that would make it interesting to
+trade on. Calibration work (below) exists partly to understand why.
+
+---
+
+## 2. C++20 trading engine
+
+**Status: working, paper-only; live socket path unverified.**
+
+See **[`trading_engine/README.md`](trading_engine/README.md)** for full detail.
+
+Maintains per-instrument order books from an authenticated, TLS-verified Kalshi
+WebSocket feed, prices them against the model's published fair values, and
+routes decisions through a risk gate into a simulated venue. Includes a
+deterministic replay harness: recorded frames are re-run through the identical
+ingest path and must produce byte-identical telemetry.
+
+- **33 tests across 17 suites, all passing.**
+- Failure-closed: refuses to trade on stale fair values, crossed books, or a
+  tripped kill switch; malformed fair-value files never clobber good state.
+- **Paper execution only** — `PaperVenue` crosses the spread against in-memory
+  book depth with partial fills and weighted-average-cost realized P&L.
+
+Known limits, stated plainly: the live WebSocket path has never been run against
+a real Kalshi account; there is **no market-data recorder** (the replay fixture
+is hand-authored); aggregate-exposure and order-rate limits are configured but
+unenforced; fees gate signals but aren't deducted from P&L; and there is no
+slippage or latency modelling.
+
+---
+
+## 3. Signal-research harness
+
+**Status: working.**
+
+`backend_ml/signal_research/` measures whether the model's probabilities are
+trustworthy and whether they'd have had edge:
+
+- **Calibration** — Brier score, log loss, reliability tables, and expected
+  calibration error (`calibration.py:20-56`).
+- **Recalibration** — isotonic regression and Platt scaling with held-out
+  evaluation (`recalibration.py:65-93`).
+- **Closing-line value** — captures Kalshi and sportsbook prices at fixed
+  moments and compares entry prices to the closing line (`market_capture.py`,
+  `clv.py`, `model_clv.py`), including model-Brier vs closing-price-Brier at
+  settlement.
+- **Leakage guards** — research modules are explicitly forbidden from importing
+  the live prediction path, which would leak the future into the past
+  (`signal_research/dataset.py:11-13`, `halflife_sweep.py:10-12`).
+
+This is post-hoc analysis over captured snapshots, not a P&L simulator — it
+answers "did the model have edge and are its probabilities honest," not "what
+would this strategy have earned."
+
+---
+
+## Repository layout
+
+```
+benchwarmer-nba/
+├── backend_ml/                # Python ML + research
+│   ├── data_engine.py         # NBA data collection & causal feature engineering
+│   ├── train_model.py         # Ensemble training (chronological split, GridSearchCV)
+│   ├── predict.py             # Inference → Supabase
+│   ├── elo_engine.py          # Sequential pre-game Elo ratings
+│   ├── recency.py             # Exponential recency weights
+│   ├── halflife_sweep.py      # Walk-forward half-life selection
+│   ├── scheduled_retrain.py   # Drift-gated nightly retrain
+│   ├── backtest.py            # Recent-window accuracy report
+│   └── signal_research/       # Calibration, CLV, market capture, settlement
+├── trading_engine/            # C++20 Kalshi engine (see its own README)
+│   ├── src/                   # market_data, strategy, risk, execution, telemetry
+│   ├── tests/                 # 33 GoogleTest tests
+│   └── tools/paper_session.cpp# Offline replay driver
+├── frontend_web/              # React + Vite + Tailwind dashboard
+├── tests/                     # Cross-cutting Python tests
+└── docs/                      # Specs, plans, project overview
+```
+
+## Tech stack
+
+**ML/backend:** Python 3.10+, XGBoost, scikit-learn, pandas, NumPy, Supabase
+**Trading engine:** C++20, Boost.Beast/Asio, OpenSSL, simdjson, nlohmann/json, GoogleTest, CMake
+**Frontend:** React 18, Vite, Tailwind CSS, Supabase JS client
+
+---
+
+## Getting started
+
+### Prerequisites
+- Python 3.10+, Node.js 18+
+- C++20 compiler, CMake ≥ 3.20, system OpenSSL and Boost (for the trading engine)
+- A Supabase project (free tier is fine)
+
+### Database
+Run `SUPABASE_SCHEMA.sql` in your Supabase project's SQL editor, then note the
+project URL and anon key.
+
+### Backend
+```bash
+cd backend_ml
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+cat > .env << 'EOF'
+SUPABASE_URL=your_supabase_url
+SUPABASE_KEY=your_supabase_service_key
+EOF
+```
+
+### Frontend
+```bash
+cd frontend_web
+npm install
+cp .env.example .env    # add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY
+npm run dev             # http://localhost:3000
+```
+
+### Trading engine
+```bash
+cd trading_engine
+cmake -S . -B build && cmake --build build -j
+./build/te_tests        # 33 tests
+```
+
+### Running the tests
+```bash
+python -m pytest backend_ml tests -q     # 193 Python tests
+cd trading_engine && ./build/te_tests    # 33 C++ tests
+```
+
+---
+
+## Usage
+
+**Train a model** (chronological split, grid search, writes the 4 artifacts):
+```python
+from train_model import train_and_optimize_model
+train_and_optimize_model()
+```
+
+**Generate predictions** for a given day (`0` = today):
+```python
+from predict import predict_games
+predict_games(day_offset=0)
+```
+
+**Replay the trading engine offline** (no network, no credentials):
+```bash
+cd trading_engine
+./build/paper_session fair_values.json tests/fixtures/replay_sample.jsonl T
+```
+
+---
+
+## Roadmap
+
+### Phase 1: Data collection — ✅ complete
+- [x] Project structure
+- [x] NBA data fetching (`data_engine.py`, NBA Stats API)
+- [x] Historical game data cached (13,182 games, 2015–2026)
+- [x] Team and player statistics (incl. `player_impact_engine.py`)
+- [x] Causal feature engineering (18 features; `shift(1)` before every window)
+
+### Phase 2: Model development — ⚠️ built, target not met
+- [x] Load and prepare training data
+- [x] Train XGBoost baseline
+- [x] Hyperparameter tuning (`GridSearchCV`, `TimeSeriesSplit`)
+- [x] Evaluate on a chronological held-out split
+- [x] Ensemble with Ridge; recency-weighted training with walk-forward selection
+- [ ] **>65% accuracy target — currently 61.55%**
+
+### Phase 3: Prediction pipeline — ⚠️ mostly complete
+- [x] Load trained model for inference
+- [x] Fetch today's games
+- [x] Generate predictions
+- [x] Store predictions in Supabase
+- [x] Automated *retraining* (nightly, drift-gated)
+- [ ] Automated *daily prediction* runs (retraining is scheduled; inference is still manual)
+
+### Phase 4: Frontend integration — ⚠️ mostly complete
+- [x] Connect frontend to Supabase
+- [x] Display real predictions (live `game_predictions` query)
+- [x] Working filters (team search, status, confidence threshold)
+- [x] Confidence levels surfaced
+- [ ] Prediction details modal
+
+### Phase 5: Trading engine — ✅ v1 complete (paper-only)
+- [x] Kalshi WebSocket ingest with TLS hostname verification and RSA-PSS auth
+- [x] Order-book reconstruction from snapshot + incremental deltas
+- [x] Strategy pipeline (arb, edge-taker, market-maker quoting)
+- [x] Risk gate: order size, per-market position caps, daily-loss kill switch
+- [x] Paper execution with partial fills and realized P&L
+- [x] Deterministic replay harness (33 tests passing)
+- [ ] Live path verified against a real Kalshi account
+- [ ] Aggregate-exposure and order-rate limits enforced
+- [ ] Market-data recorder (replay fixture is currently hand-authored)
+- [ ] Two-legged arb execution (currently YES leg only)
+
+### Phase 6: Signal research — ✅ core complete
+- [x] Brier / log loss / reliability / ECE
+- [x] Isotonic and Platt recalibration
+- [x] Market capture and closing-line-value analysis
+- [x] Settlement lookup and model-vs-closing-line comparison
+- [ ] Sustained live capture across a full season
+
+### Phase 7: Advanced — not started
+- [ ] Real-time game updates
+- [ ] Historical prediction tracking dashboard
+- [ ] Model performance dashboard
+- [ ] User accounts and favorites
+
+---
+
+## Performance targets
+
+| Metric | Target | Current |
+|---|---|---|
+| Accuracy | >65% | **61.55%** (85/15 chronological split) |
+| High-confidence accuracy | >70% at 75%+ confidence | not yet measured |
+| Calibration | well-calibrated probabilities | measured via Brier/ECE; recalibration available |
+| ROC-AUC | >0.70 | not yet at target |
+
+## License
+
+MIT — free to use for learning or personal projects.
+
+---
+
+**Status:** Trading engine and signal-research harness are functional
+(paper-only, 33 + 193 tests passing). The NBA prediction pipeline runs end to
+end but has not yet reached its accuracy target.
